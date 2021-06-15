@@ -26,7 +26,9 @@ class Registration
     }
     public function showRegistrationForm()
     {
+        foreach ($this->fields as $name => $field) $field->value = isset($_SESSION['formData'][$name]) ? $_SESSION['formData'][$name] : '';
         $formData = $this->fields;
+        if (isset($_SESSION['formData'])) unset($_SESSION['formData']);
         include 'templates/registrationForm.php';
     }
     public function registerUser()
@@ -66,5 +68,26 @@ class Registration
             return ACTION_OK;
         else
             return ACTION_FAILED;
+
+        // Sprawdzenie, czy wykryto puste pola 
+        if ($emptyFieldDetected == true) {
+            unset($fieldsFromForm['haslo']);
+            unset($fieldsFromForm['haslo2']);
+            $_SESSION['formData'] = $fieldsFromForm;
+            return FORM_DATA_MISSING;
+        } // Sprawdzenie, czy podany e-mail jest już w bazie 
+        $query = "SELECT COUNT(*) FROM Klienci WHERE Email=" . $fieldsFromForm['email'] . "'";
+        if ($this->dbo->getQuerySingleResult($query) > 0) {
+            unset($fieldsFromForm['haslo']);
+            unset($fieldsFromForm['haslo2']);
+            $_SESSION['formData'] = $fieldsFromForm;
+            return USER_NAME_ALREADY_EXISTS;
+        } // Sprawdzenie zgodności hasła z obu pól 
+        if ($fieldsFromForm['haslo'] != $fieldsFromForm['haslo2']) {
+            unset($fieldsFromForm['haslo']);
+            unset($fieldsFromForm['haslo2']);
+            $_SESSION['formData'] = $fieldsFromForm;
+            return PASSWORDS_DO_NOT_MATCH;
+        }
     }
 }
